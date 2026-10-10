@@ -27,7 +27,7 @@ export const dashboardNavigation = [
   },
   {
     title: "Identify Marble",
-    href: "/identify",
+    href: "/match",
     icon: ScanSearch,
   },
   {

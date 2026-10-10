@@ -156,7 +156,7 @@ export default async function MarbleDetailPage({
                 Back to Catalogue
               </Link>
               <Link
-                href="/identify"
+                href="/match"
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-sm font-medium text-white outline-none transition-colors hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400"
               >
                 <ScanSearch className="size-4" aria-hidden="true" />
