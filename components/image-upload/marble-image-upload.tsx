@@ -2,7 +2,14 @@
 
 import Image from "next/image";
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
-import { ImagePlus, RefreshCw, Trash2, UploadCloud } from "lucide-react";
+import {
+  Camera,
+  ImagePlus,
+  RefreshCw,
+  Trash2,
+  UploadCloud,
+  X,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +25,11 @@ const acceptedTypes = ["image/jpeg", "image/png", "image/webp"];
 const maxFileSize = 10 * 1024 * 1024;
 
 type SelectedImage = {
+  file: File;
+  previewUrl: string;
+};
+
+type CapturedImage = {
   file: File;
   previewUrl: string;
 };
@@ -40,11 +52,19 @@ function validateFile(file: File) {
 
 export function MarbleImageUpload() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(
     null
   );
+  const [capturedImage, setCapturedImage] = useState<CapturedImage | null>(
+    null
+  );
   const [error, setError] = useState("");
+  const [cameraError, setCameraError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isCameraStarting, setIsCameraStarting] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -54,6 +74,26 @@ export function MarbleImageUpload() {
     };
   }, [selectedImage?.previewUrl]);
 
+  useEffect(() => {
+    return () => {
+      if (capturedImage?.previewUrl) {
+        URL.revokeObjectURL(capturedImage.previewUrl);
+      }
+    };
+  }, [capturedImage?.previewUrl]);
+
+  useEffect(() => {
+    if (videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [isCameraOpen]);
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
   function openFilePicker() {
     inputRef.current?.click();
   }
@@ -62,6 +102,28 @@ export function MarbleImageUpload() {
     if (inputRef.current) {
       inputRef.current.value = "";
     }
+  }
+
+  function clearCapturedImage() {
+    setCapturedImage((current) => {
+      if (current?.previewUrl) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+
+      return null;
+    });
+  }
+
+  function stopCamera() {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setIsCameraOpen(false);
+    setIsCameraStarting(false);
   }
 
   function selectFile(file: File | undefined) {
@@ -87,6 +149,8 @@ export function MarbleImageUpload() {
     const previewUrl = URL.createObjectURL(file);
 
     setError("");
+    setCameraError("");
+    stopCamera();
     setSelectedImage((current) => {
       if (current?.previewUrl) {
         URL.revokeObjectURL(current.previewUrl);
@@ -97,6 +161,7 @@ export function MarbleImageUpload() {
         previewUrl,
       };
     });
+    clearCapturedImage();
   }
 
   function removeSelectedImage() {
@@ -109,6 +174,121 @@ export function MarbleImageUpload() {
     });
     setError("");
     clearInputValue();
+  }
+
+  async function openCamera() {
+    setCameraError("");
+    setError("");
+    clearCapturedImage();
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError(
+        "Camera capture is not supported in this browser. Use image upload instead."
+      );
+      return;
+    }
+
+    try {
+      setIsCameraStarting(true);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+        },
+        audio: false,
+      });
+
+      streamRef.current = stream;
+      setIsCameraOpen(true);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (cameraAccessError) {
+      const message =
+        cameraAccessError instanceof DOMException &&
+        cameraAccessError.name === "NotAllowedError"
+          ? "Camera permission was denied. Allow camera access or use image upload instead."
+          : "Camera is unavailable. Check your device or use image upload instead.";
+
+      setCameraError(message);
+      stopCamera();
+    } finally {
+      setIsCameraStarting(false);
+    }
+  }
+
+  function closeCamera() {
+    stopCamera();
+    setCameraError("");
+  }
+
+  async function capturePhoto() {
+    const video = videoRef.current;
+
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+      setCameraError("Camera preview is not ready yet. Try again in a moment.");
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      setCameraError("Unable to capture from this camera preview.");
+      return;
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", 0.92);
+    });
+
+    if (!blob) {
+      setCameraError("Unable to create an image from the captured frame.");
+      return;
+    }
+
+    const file = new File([blob], `marble-capture-${Date.now()}.jpg`, {
+      type: "image/jpeg",
+    });
+    const validationError = validateFile(file);
+
+    if (validationError) {
+      setCameraError(validationError);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+
+    setCameraError("");
+    setCapturedImage((current) => {
+      if (current?.previewUrl) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+
+      return {
+        file,
+        previewUrl,
+      };
+    });
+    stopCamera();
+  }
+
+  function retakePhoto() {
+    clearCapturedImage();
+    void openCamera();
+  }
+
+  function acceptCapturedPhoto() {
+    if (!capturedImage) {
+      return;
+    }
+
+    selectFile(capturedImage.file);
   }
 
   function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
@@ -163,6 +343,105 @@ export function MarbleImageUpload() {
             className="sr-only"
             onChange={handleInputChange}
           />
+
+          <div className="mb-4 grid gap-3 sm:grid-cols-2">
+            <Button type="button" variant="outline" onClick={openFilePicker}>
+              <ImagePlus aria-hidden="true" />
+              Upload Image
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openCamera}
+              disabled={isCameraStarting || isCameraOpen}
+            >
+              <Camera aria-hidden="true" />
+              {isCameraStarting ? "Opening Camera..." : "Take Photo"}
+            </Button>
+          </div>
+
+          {cameraError ? (
+            <div
+              className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+              role="alert"
+            >
+              {cameraError}
+            </div>
+          ) : null}
+
+          {isCameraOpen ? (
+            <div className="mb-4 rounded-lg border border-zinc-200 bg-zinc-950 p-4 shadow-sm">
+              <div className="overflow-hidden rounded-lg bg-black">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="aspect-[16/10] w-full object-cover"
+                  aria-label="Live camera preview"
+                />
+              </div>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="bg-white"
+                  onClick={closeCamera}
+                  aria-label="Close camera preview"
+                >
+                  <X aria-hidden="true" />
+                  Close Camera
+                </Button>
+                <Button
+                  type="button"
+                  onClick={capturePhoto}
+                  aria-label="Capture photo from camera"
+                >
+                  <Camera aria-hidden="true" />
+                  Capture Photo
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {capturedImage ? (
+            <div className="mb-4 grid gap-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+              <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
+                <Image
+                  src={capturedImage.previewUrl}
+                  alt="Captured marble preview"
+                  width={960}
+                  height={640}
+                  unoptimized
+                  className="aspect-[16/10] w-full object-cover"
+                />
+              </div>
+              <div className="flex flex-col justify-between rounded-lg border border-zinc-200 bg-white p-4">
+                <div>
+                  <p className="text-sm font-medium text-zinc-950">
+                    Captured photo ready
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {capturedImage.file.type} ·{" "}
+                    {formatBytes(capturedImage.file.size)}
+                  </p>
+                  <p className="mt-4 text-sm leading-6 text-zinc-600">
+                    Review this frame before using it for the local preview.
+                  </p>
+                </div>
+                <div className="mt-5 flex flex-col gap-2">
+                  <Button type="button" variant="outline" onClick={retakePhoto}>
+                    <RefreshCw aria-hidden="true" />
+                    Retake Photo
+                  </Button>
+                  <Button type="button" onClick={acceptCapturedPhoto}>
+                    <Camera aria-hidden="true" />
+                    Accept Photo
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div
             onDragOver={handleDragOver}
@@ -238,7 +517,7 @@ export function MarbleImageUpload() {
                   id="upload-help"
                   className="mt-2 max-w-md text-sm leading-6 text-zinc-600"
                 >
-                  Drag and drop an image, or click to browse your computer.
+                  Drag and drop an image, click upload, or use the camera.
                   JPEG, PNG and WebP files up to 10 MB are accepted.
                 </p>
                 <Button type="button" className="mt-5" onClick={openFilePicker}>
