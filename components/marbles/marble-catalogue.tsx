@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Search, SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,17 @@ import {
   marbleTypes,
   type DemoMarble,
 } from "@/lib/demo-marbles";
+import { evaluationSamples } from "@/lib/evaluation-samples";
+import { MarbleImageUpload } from "@/components/image-upload/marble-image-upload";
+import {
+  getUserMarbleSamples,
+  saveUserMarbleSample,
+  type UserMarbleSample,
+} from "@/lib/user-marble-samples";
+
+type SavedMarbleSample = UserMarbleSample & {
+  previewUrl: string;
+};
 
 function matchesSearch(marble: DemoMarble, search: string) {
   const value = search.trim().toLowerCase();
@@ -39,6 +50,66 @@ export function MarbleCatalogue() {
   const [search, setSearch] = useState("");
   const [color, setColor] = useState("all");
   const [type, setType] = useState("all");
+  const [uploadedSamples, setUploadedSamples] = useState<SavedMarbleSample[]>(
+    []
+  );
+  const [sampleStorageError, setSampleStorageError] = useState("");
+  const samplePreviewUrlsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    let isCurrent = true;
+    const previewUrls = samplePreviewUrlsRef.current;
+
+    void getUserMarbleSamples()
+      .then((samples) => {
+        const savedSamples = samples.map((sample) => ({
+          ...sample,
+          previewUrl: URL.createObjectURL(sample.image),
+        }));
+
+        if (!isCurrent) {
+          savedSamples.forEach((sample) =>
+            URL.revokeObjectURL(sample.previewUrl)
+          );
+          return;
+        }
+
+        savedSamples.forEach((sample) => previewUrls.add(sample.previewUrl));
+        setUploadedSamples((current) => {
+          const loadedIds = new Set(savedSamples.map((sample) => sample.id));
+          return [
+            ...current.filter((sample) => !loadedIds.has(sample.id)),
+            ...savedSamples,
+          ];
+        });
+      })
+      .catch((loadError: unknown) => {
+        if (isCurrent) {
+          setSampleStorageError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Unable to load your saved marble samples."
+          );
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+      previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
+      previewUrls.clear();
+    };
+  }, []);
+
+  const addUploadedSample = useCallback(async (file: File) => {
+    const sample = await saveUserMarbleSample(file);
+    const previewUrl = URL.createObjectURL(sample.image);
+    samplePreviewUrlsRef.current.add(previewUrl);
+    setSampleStorageError("");
+    setUploadedSamples((current) => [
+      { ...sample, previewUrl },
+      ...current.filter((existing) => existing.id !== sample.id),
+    ]);
+  }, []);
 
   const filteredMarbles = useMemo(() => {
     return demoMarbles.filter((marble) => {
@@ -260,6 +331,161 @@ export function MarbleCatalogue() {
           </Button>
         </section>
       )}
+
+      <section aria-labelledby="catalogue-image-upload" className="space-y-4">
+        <div>
+          <Badge variant="outline" className="border-zinc-300 bg-zinc-50">
+            Image identification
+          </Badge>
+          <h2
+            id="catalogue-image-upload"
+            className="mt-3 text-lg font-semibold text-zinc-950"
+          >
+            Upload or capture a marble image
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-zinc-500">
+            Use an image from your device or capture one with your camera.
+            Accepted images are saved as samples in this browser.
+          </p>
+        </div>
+        <MarbleImageUpload
+          onImageSelected={addUploadedSample}
+          showMatchingResults={false}
+        />
+      </section>
+
+      <section aria-labelledby="company-evaluation-images" className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Badge variant="outline" className="border-zinc-300 bg-zinc-50">
+              Marble sample library
+            </Badge>
+            <h2
+              id="company-evaluation-images"
+              className="mt-3 text-lg font-semibold text-zinc-950"
+            >
+              Marble evaluation samples
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-zinc-500">
+              Uploaded images are saved locally in this browser. Company
+              evaluation labels are dataset ground truth, not matching results.
+            </p>
+          </div>
+          <Link
+            href="/samples"
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-zinc-700 outline-none transition-colors hover:bg-zinc-200 hover:text-zinc-950 focus-visible:ring-2 focus-visible:ring-zinc-400"
+          >
+            Browse all {evaluationSamples.length} samples
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        </div>
+
+        {sampleStorageError ? (
+          <p
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            {sampleStorageError}
+          </p>
+        ) : null}
+
+        {uploadedSamples.length > 0 ? (
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-base font-semibold text-zinc-950">
+                Your uploaded marble samples
+              </h3>
+              <p className="mt-1 text-sm text-zinc-500">
+                Saved in this browser and visible only on this device.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {uploadedSamples.map((sample) => (
+                <article
+                  key={sample.id}
+                  className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm"
+                >
+                  <div className="relative aspect-16/10 border-b border-zinc-200 bg-zinc-100">
+                    <Image
+                      src={sample.previewUrl}
+                      alt={`Uploaded marble sample ${sample.filename}`}
+                      fill
+                      unoptimized
+                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                      className="object-contain"
+                    />
+                  </div>
+                  <div className="space-y-3 p-4">
+                    <div className="min-w-0">
+                      <h4 className="font-medium text-zinc-950">
+                        {sample.filename}
+                      </h4>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Uploaded marble sample
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="border-zinc-300">
+                      Your sample
+                    </Badge>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="space-y-3">
+          {uploadedSamples.length > 0 ? (
+            <h3 className="text-base font-semibold text-zinc-950">
+              Company evaluation samples
+            </h3>
+          ) : null}
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {evaluationSamples.slice(0, 6).map((sample) => (
+              <article
+                key={sample.filename}
+                className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm"
+              >
+                <div className="relative h-48 border-b border-zinc-200 bg-zinc-100">
+                  <Image
+                    src={sample.src}
+                    alt={`Company marble evaluation sample ${sample.imageId}`}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                    className="object-contain"
+                  />
+                </div>
+                <div className="space-y-3 p-4">
+                  <div className="min-w-0">
+                    <h3 className="font-medium text-zinc-950">
+                      Sample {sample.imageId.replace("img_", "")}
+                    </h3>
+                    <p className="mt-1 truncate text-xs text-zinc-500">
+                      {sample.filename}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="border-zinc-300">
+                      {sample.condition.replace("_", " ")}
+                    </Badge>
+                    <Badge variant="secondary" className="bg-zinc-100">
+                      Ground truth: {sample.label}
+                    </Badge>
+                  </div>
+                  <Link
+                    href={`/match?sample=${encodeURIComponent(sample.filename)}`}
+                    className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-950 outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  >
+                    Use sample in identification
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

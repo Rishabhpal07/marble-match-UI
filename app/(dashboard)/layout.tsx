@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 
-import { DashboardHeader } from "@/components/layout/header";
-import { DashboardSidebar } from "@/components/layout/sidebar";
+import { PremiumNavigation } from "@/components/layout/premium-navigation";
+
+export const instant = false;
 
 export default function DashboardLayout({
   children,
@@ -9,14 +10,11 @@ export default function DashboardLayout({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-950">
-      <DashboardSidebar />
-      <div className="flex min-h-screen flex-col lg:pl-72">
-        <DashboardHeader />
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-7xl">{children}</div>
-        </main>
-      </div>
+    <div className="min-h-screen bg-[#fbfaf8] [font-family:var(--font-geist-sans)] text-stone-900">
+      <PremiumNavigation />
+      <main className="mx-auto w-full max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12 lg:py-10">
+        {children}
+      </main>
     </div>
   );
 }

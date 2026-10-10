@@ -11,9 +11,8 @@ export default function MatchPage() {
           Match from an uploaded image
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600">
-          Select a local marble photograph to prepare it for identification.
-          This task only creates the upload interface; no image is sent to a
-          server and no matching result is generated.
+          Upload or capture a marble photo, or choose a company evaluation
+          sample to review available image comparisons.
         </p>
       </section>
 

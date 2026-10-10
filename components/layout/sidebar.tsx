@@ -4,14 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Gem,
-  History,
   LayoutDashboard,
-  Settings,
-  Sparkles,
   ScanSearch,
+  Sparkles,
 } from "lucide-react";
+import { UserButton, useUser } from "@clerk/nextjs";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 export const dashboardNavigation = [
@@ -29,16 +27,6 @@ export const dashboardNavigation = [
     title: "Identify Marble",
     href: "/match",
     icon: ScanSearch,
-  },
-  {
-    title: "History",
-    href: "/history",
-    icon: History,
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
   },
 ] as const;
 
@@ -72,6 +60,12 @@ export function DashboardSidebarContent({
   onNavigate,
 }: DashboardSidebarContentProps) {
   const pathname = usePathname();
+  const { isLoaded, user } = useUser();
+  const displayName =
+    user?.fullName ??
+    user?.primaryEmailAddress?.emailAddress ??
+    (isLoaded ? "Signed-in user" : "Loading account...");
+  const displayEmail = user?.primaryEmailAddress?.emailAddress;
 
   return (
     <div className="flex min-h-0 w-full flex-col">
@@ -126,17 +120,22 @@ export function DashboardSidebarContent({
 
       <div className="border-t border-white/10 p-4">
         <div className="flex items-center gap-3 rounded-lg bg-white/[0.06] p-3">
-          <Avatar className="after:border-white/10">
-            <AvatarFallback className="bg-zinc-800 text-xs font-semibold text-zinc-100">
-              MM
-            </AvatarFallback>
-          </Avatar>
+          <UserButton
+            showName={false}
+            appearance={{
+              elements: {
+                userButtonAvatarBox: "size-10",
+                userButtonTrigger:
+                  "rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/70",
+              },
+            }}
+          />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-white">
-              Studio User
+              {displayName}
             </p>
             <p className="truncate text-xs text-zinc-400">
-              Inventory manager
+              {displayEmail ?? "MarbleMatch account"}
             </p>
           </div>
         </div>
