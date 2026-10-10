@@ -22,7 +22,7 @@ export const dashboardNavigation = [
   },
   {
     title: "Marble Catalogue",
-    href: "/catalogue",
+    href: "/marbles",
     icon: Gem,
   },
   {

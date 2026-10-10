@@ -184,7 +184,7 @@ export default function DashboardOverviewPage() {
               </p>
             </div>
             <Link
-              href="/catalogue"
+              href="/marbles"
               className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-zinc-700 outline-none transition-colors hover:bg-zinc-200 hover:text-zinc-950 focus-visible:ring-2 focus-visible:ring-zinc-400"
             >
               View All

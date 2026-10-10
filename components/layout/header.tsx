@@ -17,7 +17,7 @@ import { DashboardSidebarContent, dashboardNavigation } from "./sidebar";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
-  "/catalogue": "Marble Catalogue",
+  "/marbles": "Marble Catalogue",
   "/identify": "Identify Marble",
   "/history": "History",
   "/settings": "Settings",
