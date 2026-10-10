@@ -23,6 +23,7 @@ export type DemoMarble = {
   finish: "Polished" | "Honed" | "Leathered" | "Brushed";
   type: MarbleType;
   origin: string;
+  description: string;
   image: string;
 };
 
@@ -73,6 +74,8 @@ export const demoMarbles: DemoMarble[] = [
     finish: "Polished",
     type: "Calacatta",
     origin: "Carrara, Italy",
+    description:
+      "A demonstration Calacatta-style slab with warm gold veining over a soft white base, suitable for premium counters, feature walls, and showroom display mockups.",
     image: marbleImage({
       base: "#f7f4ea",
       accent: "#d8cfbc",
@@ -87,6 +90,8 @@ export const demoMarbles: DemoMarble[] = [
     finish: "Honed",
     type: "Carrara",
     origin: "Tuscany, Italy",
+    description:
+      "A sample Carrara-inspired marble with a quiet white-grey palette and soft linear movement, shown here as demo catalogue data only.",
     image: marbleImage({
       base: "#f3f4f1",
       accent: "#d9dcda",
@@ -101,6 +106,8 @@ export const demoMarbles: DemoMarble[] = [
     finish: "Polished",
     type: "Marquina",
     origin: "Markina, Spain",
+    description:
+      "A dramatic black marble sample with crisp light veining, useful for previewing high-contrast surfaces in the MarbleMatch catalogue interface.",
     image: marbleImage({
       base: "#09090a",
       accent: "#2d2d31",
@@ -115,6 +122,8 @@ export const demoMarbles: DemoMarble[] = [
     finish: "Leathered",
     type: "Onyx",
     origin: "Balochistan, Pakistan",
+    description:
+      "A dark onyx-inspired demonstration record with bronze-toned movement and a leathered finish for testing richer material presentations.",
     image: marbleImage({
       base: "#13100f",
       accent: "#4b4037",
@@ -129,6 +138,8 @@ export const demoMarbles: DemoMarble[] = [
     finish: "Polished",
     type: "Verde",
     origin: "Aosta Valley, Italy",
+    description:
+      "A green marble sample with alpine character, pale veining, and polished depth, included as demo data for catalogue and detail layouts.",
     image: marbleImage({
       base: "#11251f",
       accent: "#355c49",
@@ -143,6 +154,8 @@ export const demoMarbles: DemoMarble[] = [
     finish: "Brushed",
     type: "Verde",
     origin: "Rajasthan, India",
+    description:
+      "A Verde Guatemala-inspired demonstration stone with saturated green movement and a brushed finish for sample filtering workflows.",
     image: marbleImage({
       base: "#0d352c",
       accent: "#1f6a58",
@@ -157,6 +170,8 @@ export const demoMarbles: DemoMarble[] = [
     finish: "Polished",
     type: "Rosso",
     origin: "Liguria, Italy",
+    description:
+      "A deep red marble example with creamy veins and polished contrast, intended for previewing statement stone records in the demo catalogue.",
     image: marbleImage({
       base: "#3a1014",
       accent: "#8c3431",
@@ -171,6 +186,8 @@ export const demoMarbles: DemoMarble[] = [
     finish: "Polished",
     type: "Statuario",
     origin: "Carrara, Italy",
+    description:
+      "A Statuario-inspired sample with a bright field and measured grey veining, presented as demonstration data until real inventory is provided.",
     image: marbleImage({
       base: "#fbfaf6",
       accent: "#d6dadd",
@@ -185,6 +202,8 @@ export const demoMarbles: DemoMarble[] = [
     finish: "Honed",
     type: "Travertine",
     origin: "Denizli, Turkey",
+    description:
+      "A silver travertine-style demo record with a honed surface and layered grey-beige movement for testing neutral stone presentations.",
     image: marbleImage({
       base: "#b9b6ad",
       accent: "#6e6d68",
@@ -199,6 +218,8 @@ export const demoMarbles: DemoMarble[] = [
     finish: "Brushed",
     type: "Travertine",
     origin: "Alicante, Spain",
+    description:
+      "A warm beige Crema Marfil-style demonstration stone with a brushed finish, useful for reviewing softer palette catalogue states.",
     image: marbleImage({
       base: "#efe1c4",
       accent: "#c5aa78",
