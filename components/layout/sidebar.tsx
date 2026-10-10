@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 export const dashboardNavigation = [
   {
     title: "Dashboard",
-    href: "/dashboard",
+    href: "/",
     icon: LayoutDashboard,
   },
   {
@@ -77,7 +77,7 @@ export function DashboardSidebarContent({
     <div className="flex min-h-0 w-full flex-col">
       <div className="flex h-20 items-center border-b border-white/10 px-6">
         <Link
-          href="/dashboard"
+          href="/"
           className="flex items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           onClick={onNavigate}
         >
